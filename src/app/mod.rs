@@ -1,4 +1,5 @@
-use crossterm::event::{Event, KeyCode, KeyEvent};
+use crate::events::AppEvent;
+use crossterm::event::{KeyCode, KeyModifiers};
 use std::error::Error;
 
 pub struct App {
@@ -14,14 +15,15 @@ impl App {
         }
     }
 
-    pub fn handle_event(&mut self, event: Event) -> Result<(), Box<dyn Error>> {
-        if let Event::Key(key) = event {
-            match key.code {
-                KeyCode::Char('q') => self.running = false,
-                // Add other event handling here
+    pub fn handle_event(&mut self, event: AppEvent) -> Result<(), Box<dyn Error>> {
+        if let AppEvent::Key(key) = event {
+            match (key.code, key.modifiers) {
+                (KeyCode::Char('q'), KeyModifiers::NONE) => self.running = false,
+                (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.running = false,
                 _ => {}
-            }
-        }
+            };
+        };
+
         Ok(())
     }
 }
