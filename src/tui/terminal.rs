@@ -1,3 +1,4 @@
+use crate::theme::catppuccin::Theme;
 use crate::tui::layout::centered_rect;
 use crossterm::{
     execute,
@@ -15,10 +16,11 @@ pub struct Terminal {
 
 impl Terminal {
     pub fn draw(&mut self, app: &App) -> Result<(), Box<dyn Error>> {
+        let theme = Theme::macchiato();
         self.terminal.draw(|f| {
             let typing = TypingWidget::new(&app.message)
                 .frame(app.current_frame)
-                .style(Style::default().fg(Color::Yellow))
+                .style(theme.text)
                 .alignment(Alignment::Center);
 
             let area = centered_rect(f.area(), 50, 10);
