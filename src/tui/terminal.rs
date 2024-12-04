@@ -1,11 +1,13 @@
+use crate::tui::layout::centered_rect;
 use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::*, widgets::Paragraph};
+use ratatui::prelude::*;
 use std::{error::Error, io::Stderr};
 
 use crate::app::App;
+use crate::widgets::typing::TypingWidget;
 
 pub struct Terminal {
     terminal: ratatui::Terminal<ratatui::backend::CrosstermBackend<Stderr>>,
@@ -13,12 +15,14 @@ pub struct Terminal {
 
 impl Terminal {
     pub fn draw(&mut self, app: &App) -> Result<(), Box<dyn Error>> {
-        self.terminal.draw(|frame| {
-            let area = super::layout::centered_rect(frame.area(), 50, 10);
-            frame.render_widget(
-                Paragraph::new(app.message.as_str()).alignment(Alignment::Center),
-                area,
-            );
+        self.terminal.draw(|f| {
+            let typing = TypingWidget::new(&app.message)
+                .frame(app.current_frame)
+                .style(Style::default().fg(Color::Yellow))
+                .alignment(Alignment::Center);
+
+            let area = centered_rect(f.area(), 50, 10);
+            f.render_widget(typing, area);
         })?;
         Ok(())
     }

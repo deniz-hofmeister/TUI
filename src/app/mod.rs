@@ -4,8 +4,8 @@ use std::error::Error;
 
 pub struct App {
     pub running: bool,
-    pub message: String,
-    current_frame: u64,
+    pub(crate) message: String,
+    pub(crate) current_frame: usize,
 }
 
 impl App {
@@ -20,7 +20,7 @@ impl App {
     pub fn handle_event(&mut self, event: AppEvent) -> Result<(), Box<dyn Error>> {
         match event {
             AppEvent::Tick => {
-                self.message = self.current_frame.to_string();
+                self.message = format!("This is frame number: {}", self.current_frame);
                 self.current_frame += 1;
             }
             AppEvent::Key(key) => {

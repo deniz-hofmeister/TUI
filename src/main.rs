@@ -1,6 +1,7 @@
 mod app;
 mod events;
 mod tui;
+mod widgets;
 
 use std::error::Error;
 use std::time::Duration;
@@ -8,7 +9,7 @@ use std::time::Duration;
 fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = tui::terminal::Terminal::new()?;
     let mut app = app::App::new();
-    let events = events::EventHandler::new(Duration::from_millis(100));
+    let events = events::EventHandler::new(Duration::from_millis(10));
 
     while app.running {
         terminal.draw(&app)?;

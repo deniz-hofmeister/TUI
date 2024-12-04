@@ -20,7 +20,6 @@ impl EventHandler {
         let (tx, rx) = mpsc::channel();
         let event_tx = tx.clone();
 
-        // Spawn event polling thread
         thread::spawn(move || {
             let mut last_tick = Instant::now();
             loop {
