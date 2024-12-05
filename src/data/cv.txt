@@ -13,7 +13,7 @@
 
 ## Professional Summary
 
-An enthusiastic and versatile engineer with a passion for robotics and control systems. I have a broad understanding of engineering and business, and I thrive in team environments where I can lead and collaborate to achieve objectives. My expertise spans across system refactoring, control systems, and AI-driven solutions.
+An enthusiastic and versatile engineer with a passion for robotics and control systems. I have a broad understanding of engineering and business, and I thrive in team environments where I can lead and collaborate to achieve objectives. My expertise spans across system refactoring, control systems and CI/CD.
 
 ---
 

@@ -1,3 +1,5 @@
+use crate::theme::catppuccin::apply_custom_styles;
+use crate::theme::catppuccin::Theme;
 use ratatui::{prelude::*, widgets::*};
 
 pub struct TypingWidget<'a> {
@@ -42,9 +44,10 @@ impl<'a> TypingWidget<'a> {
 
 impl Widget for TypingWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let visible_text =
+        let theme = Theme::macchiato();
+        let mut visible_text =
             tui_markdown::from_str(&self.text[..self.current_frame.min(self.text.len())]);
-
+        apply_custom_styles(&mut visible_text, &theme);
         Paragraph::new(visible_text)
             .style(self.style)
             .alignment(self.alignment)

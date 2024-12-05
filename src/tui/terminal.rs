@@ -22,7 +22,7 @@ impl Terminal {
             let typing = TypingWidget::new(&app.message)
                 .frame(app.current_frame)
                 .style(theme.text)
-                .alignment(Alignment::Center)
+                .alignment(Alignment::Left)
                 .wrap(Some(Wrap { trim: true }));
 
             let area = centered_rect(f.area(), 80, 80);

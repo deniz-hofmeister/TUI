@@ -1,5 +1,5 @@
-use catppuccin::Flavor;
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::text::Text;
 
 pub struct Theme {
     pub text: Style,
@@ -19,9 +19,9 @@ impl Theme {
                 palette.text.rgb.b,
             )),
             highlight: Style::default().fg(Color::Rgb(
-                palette.mauve.rgb.r,
-                palette.mauve.rgb.g,
-                palette.mauve.rgb.b,
+                palette.teal.rgb.r,
+                palette.teal.rgb.g,
+                palette.teal.rgb.b,
             )),
             background: Color::Rgb(palette.base.rgb.r, palette.base.rgb.g, palette.base.rgb.b),
             surface: Color::Rgb(
@@ -29,6 +29,16 @@ impl Theme {
                 palette.surface0.rgb.g,
                 palette.surface0.rgb.b,
             ),
+        }
+    }
+}
+
+pub fn apply_custom_styles(text: &mut Text, theme: &Theme) {
+    for line in text.lines.iter_mut() {
+        if let Some(first_span) = line.spans.first() {
+            if first_span.content.starts_with("# ") {
+                line.style = theme.highlight.bg(theme.surface);
+            };
         }
     }
 }
