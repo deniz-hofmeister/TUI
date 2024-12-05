@@ -5,6 +5,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::prelude::*;
+use ratatui::widgets::Wrap;
 use std::{error::Error, io::Stderr};
 
 use crate::app::App;
@@ -21,9 +22,10 @@ impl Terminal {
             let typing = TypingWidget::new(&app.message)
                 .frame(app.current_frame)
                 .style(theme.text)
-                .alignment(Alignment::Center);
+                .alignment(Alignment::Center)
+                .wrap(Some(Wrap { trim: true }));
 
-            let area = centered_rect(f.area(), 50, 10);
+            let area = centered_rect(f.area(), 80, 80);
             f.render_widget(typing, area);
         })?;
         Ok(())

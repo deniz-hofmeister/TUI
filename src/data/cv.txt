@@ -1,0 +1,73 @@
+# Deniz Hofmeister
+
+**Senior Robotics Engineer**
+
+---
+
+## Contact
+
+- **LinkedIn:** [linkedin.com/in/deniz-hofmeister](https://www.linkedin.com/in/deniz-hofmeister)
+- **GitHub:** [github.com/deniz-hofmeister](https://github.com/deniz-hofmeister)
+
+---
+
+## Professional Summary
+
+An enthusiastic and versatile engineer with a passion for robotics and control systems. I have a broad understanding of engineering and business, and I thrive in team environments where I can lead and collaborate to achieve objectives. My expertise spans across system refactoring, control systems, and AI-driven solutions.
+
+---
+
+## Education
+
+**MSc. Electrical Engineering**  
+*TU Delft, 2017-2019*  
+Specialized in DSP and Control Systems. Thesis on neural network-based control.
+
+---
+
+## Work Experience
+
+**Senior Robotics Engineer**  
+*Ranmarine B.V., 2021-Today*  
+- Led system refactor from ROS1 to ROS2.
+- Developed a gazebo simulator and dockerized the codebase.
+- Implemented CI/CD with TeamCity.
+- Supervised MHE and NMPC control development.
+- Created custom CUDA kernels for pointcloud processing.
+- Designed a PCB in Altium for high-power LED control.
+
+**Computer Vision / AI Engineer**  
+*Invisible Foods B.V., 2022-2023*  
+- Designed and deployed a computer vision model for quality assessment.
+- Built a training database and trained a ViT-model for image classification.
+- Developed cloud infrastructure for live inference.
+
+**Control Engineer**  
+*Shipborn B.V., 2019-2021*  
+- Developed an autonomous docking system for boats.
+- Created a C++ PI Controller for rocket roll stabilization at Delft Aerospace Rocket Engineering.
+
+---
+
+## Projects
+
+- **Drone Management Platform:** Embedded Rust, Yocto-Linux, SQL, SvelteKit.
+- **GHR Marine Systems:** Autonomous docking system for boats.
+
+---
+
+## Languages
+
+- **English, Dutch:** Native
+- **German:** Conversational
+- **Spanish, French, Indonesian:** Basic
+
+---
+
+## Additional Experience
+
+- Supervised interns and led university projects.
+- Worked as a teaching assistant at TU Delft, focusing on signal processing and instrumentation.
+
+---
+

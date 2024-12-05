@@ -1,3 +1,4 @@
+use crate::data::CV;
 use crate::events::AppEvent;
 use crossterm::event::{KeyCode, KeyModifiers};
 use std::error::Error;
@@ -12,7 +13,7 @@ impl App {
     pub fn new() -> Self {
         Self {
             running: true,
-            message: "".into(),
+            message: CV.into(),
             current_frame: 0,
         }
     }
@@ -20,8 +21,7 @@ impl App {
     pub fn handle_event(&mut self, event: AppEvent) -> Result<(), Box<dyn Error>> {
         match event {
             AppEvent::Tick => {
-                self.message = format!("This is frame number: {}", self.current_frame);
-                self.current_frame += 1;
+                self.current_frame += 10;
             }
             AppEvent::Key(key) => {
                 match (key.code, key.modifiers) {

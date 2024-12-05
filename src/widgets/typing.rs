@@ -5,6 +5,7 @@ pub struct TypingWidget<'a> {
     current_frame: usize,
     style: Style,
     alignment: Alignment,
+    wrap: Option<Wrap>,
 }
 
 impl<'a> TypingWidget<'a> {
@@ -14,6 +15,7 @@ impl<'a> TypingWidget<'a> {
             current_frame: 0,
             style: Style::default(),
             alignment: Alignment::Left,
+            wrap: Some(Wrap { trim: true }),
         }
     }
 
@@ -31,14 +33,22 @@ impl<'a> TypingWidget<'a> {
         self.current_frame = frame;
         self
     }
+
+    pub fn wrap(mut self, wrap: Option<Wrap>) -> Self {
+        self.wrap = wrap;
+        self
+    }
 }
 
 impl Widget for TypingWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let visible_text = &self.text[..self.current_frame.min(self.text.len())];
+        let visible_text =
+            tui_markdown::from_str(&self.text[..self.current_frame.min(self.text.len())]);
 
-        Paragraph::new(Line::from(visible_text).alignment(self.alignment))
+        Paragraph::new(visible_text)
             .style(self.style)
+            .alignment(self.alignment)
+            .wrap(self.wrap.unwrap_or(Wrap { trim: true }))
             .render(area, buf);
     }
 }
