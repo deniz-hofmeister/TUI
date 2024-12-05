@@ -5,16 +5,18 @@ use ratatui::{prelude::*, widgets::*};
 pub struct TypingWidget<'a> {
     text: &'a str,
     current_frame: usize,
+    scroll_position: usize,
     style: Style,
     alignment: Alignment,
     wrap: Option<Wrap>,
 }
 
 impl<'a> TypingWidget<'a> {
-    pub fn new(text: &'a str) -> Self {
+    pub fn new(text: &'a str, scroll_position: usize) -> Self {
         Self {
             text,
             current_frame: 0,
+            scroll_position,
             style: Style::default(),
             alignment: Alignment::Left,
             wrap: Some(Wrap { trim: true }),
@@ -52,6 +54,7 @@ impl Widget for TypingWidget<'_> {
             .style(self.style)
             .alignment(self.alignment)
             .wrap(self.wrap.unwrap_or(Wrap { trim: true }))
+            .scroll((self.scroll_position as u16, 0))
             .render(area, buf);
     }
 }

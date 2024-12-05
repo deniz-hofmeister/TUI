@@ -19,7 +19,7 @@ impl Terminal {
     pub fn draw(&mut self, app: &App) -> Result<(), Box<dyn Error>> {
         let theme = Theme::macchiato();
         self.terminal.draw(|f| {
-            let typing = TypingWidget::new(&app.message)
+            let typing = TypingWidget::new(&app.message, app.scroll_position)
                 .frame(app.current_frame)
                 .style(theme.text)
                 .alignment(Alignment::Left)
