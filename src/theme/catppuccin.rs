@@ -36,9 +36,9 @@ impl Theme {
 pub fn apply_custom_styles(text: &mut Text, theme: &Theme) {
     for line in text.lines.iter_mut() {
         if let Some(first_span) = line.spans.first() {
-            if first_span.content.starts_with("# ") {
-                line.style = theme.highlight.bg(theme.surface);
-            };
+            if first_span.content.starts_with("# ") || first_span.content.starts_with("## ") {
+                line.style = theme.highlight;
+            }
         }
     }
 }
