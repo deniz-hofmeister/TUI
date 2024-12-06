@@ -6,6 +6,7 @@ use crossterm::{
 };
 use ratatui::prelude::*;
 use ratatui::widgets::Wrap;
+use ratatui::widgets::{Block, Paragraph};
 use std::{error::Error, io::Stderr};
 
 use crate::app::App;
@@ -19,14 +20,26 @@ impl Terminal {
     pub fn draw(&mut self, app: &App) -> Result<(), Box<dyn Error>> {
         let theme = Theme::macchiato();
         self.terminal.draw(|f| {
+            let (main_area, bottom_bar_area) = centered_rect(f.area(), 80, 80, 3);
+
             let typing = TypingWidget::new(&app.message, app.scroll_position)
                 .frame(app.current_frame)
                 .style(theme.text)
                 .alignment(Alignment::Left)
                 .wrap(Some(Wrap { trim: true }));
 
-            let area = centered_rect(f.area(), 80, 80);
-            f.render_widget(typing, area);
+            f.render_widget(typing, main_area);
+
+            let key_hints = Paragraph::new(Line::from(vec![
+                Span::styled("q / Ctrl+c", theme.highlight),
+                Span::raw(" to quit, "),
+                Span::styled("Up/Down or k/j", theme.highlight),
+                Span::raw(" to scroll"),
+            ]))
+            .alignment(Alignment::Center)
+            .block(Block::default());
+
+            f.render_widget(key_hints, bottom_bar_area);
         })?;
         Ok(())
     }
