@@ -12,36 +12,34 @@ use crate::app::App;
 use crate::widgets::typing::TypingWidget;
 
 pub struct Terminal {
-    terminal: ratatui::Terminal<ratatui::backend::CrosstermBackend<Stderr>>,
     sender: UnboundedSender<Vec<u8>>,
     sink: Vec<u8>,
 }
 
 impl Terminal {
-    pub fn draw(&mut self, app: &App) -> Result<(), Box<dyn Error>> {
+    pub fn draw(f: &mut ratatui::Frame, app: &App) -> Result<(), Box<dyn Error>> {
         let theme = Theme::macchiato();
-        self.terminal.draw(|f| {
-            let (main_area, bottom_bar_area) = centered_rect(f.area(), 80, 80, 3);
+        let (main_area, bottom_bar_area) = centered_rect(f.area(), 80, 80, 3);
 
-            let typing = TypingWidget::new(&app.message, app.scroll_position)
-                .frame(app.current_frame)
-                .style(theme.text)
-                .alignment(Alignment::Left)
-                .wrap(Some(Wrap { trim: true }));
+        let typing = TypingWidget::new(&app.message, app.scroll_position)
+            .frame(app.current_frame)
+            .style(theme.text)
+            .alignment(Alignment::Left)
+            .wrap(Some(Wrap { trim: true }));
 
-            f.render_widget(typing, main_area);
+        f.render_widget(typing, main_area);
 
-            let key_hints = Paragraph::new(Line::from(vec![
-                Span::styled("q / Ctrl+c", theme.highlight),
-                Span::raw(" to quit, "),
-                Span::styled("Up/Down or k/j", theme.highlight),
-                Span::raw(" to scroll"),
-            ]))
-            .alignment(Alignment::Center)
-            .block(Block::default());
+        let key_hints = Paragraph::new(Line::from(vec![
+            Span::styled("q / Ctrl+c", theme.highlight),
+            Span::raw(" to quit, "),
+            Span::styled("Up/Down or k/j", theme.highlight),
+            Span::raw(" to scroll"),
+        ]))
+        .alignment(Alignment::Center)
+        .block(Block::default());
 
-            f.render_widget(key_hints, bottom_bar_area);
-        })?;
+        f.render_widget(key_hints, bottom_bar_area);
+
         Ok(())
     }
     pub async fn start(handle: Handle, channel_id: ChannelId) -> Self {
@@ -55,11 +53,7 @@ impl Terminal {
             }
         });
 
-        let terminal =
-            ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(std::io::stderr()))
-                .expect("Failed to create terminal");
         Self {
-            terminal,
             sender,
             sink: Vec::new(),
         }
