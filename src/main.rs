@@ -1,18 +1,24 @@
+use crate::app::App;
+use crate::theme::catppuccin::Theme;
+use crate::tui::layout::centered_rect;
+use crate::widgets::typing::TypingWidget;
 use async_trait::async_trait;
-use crossterm::event::{Event as CrosstermEvent, KeyCode, KeyEvent};
 use rand_core::OsRng;
 use ratatui::backend::CrosstermBackend;
-use ratatui::Terminal;
-use russh::server::Server;
-use russh::server::{Auth, Handle, Msg, Session};
-use russh::ChannelId;
-use russh::{Channel, Pty};
+use ratatui::layout::Rect;
+use ratatui::prelude::*;
+use ratatui::style::{Color, Style};
+use ratatui::widgets::Wrap;
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::{Terminal, TerminalOptions, Viewport};
+use russh::keys::ssh_key::PublicKey;
+use russh::server::*;
+use russh::{Channel, ChannelId, Pty};
 use russh_keys::Algorithm;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
-use tokio::time::{self, Duration};
 
 mod app;
 mod data;
@@ -20,11 +26,8 @@ mod events;
 mod theme;
 mod tui;
 mod widgets;
-
-// Type alias for our SSH Terminal
 type SshTerminal = Terminal<CrosstermBackend<TerminalHandle>>;
 
-// TerminalHandle is used to bridge between the terminal backend and the SSH channel
 struct TerminalHandle {
     sender: UnboundedSender<Vec<u8>>,
     // The sink collects the data which is finally sent to sender.
@@ -34,8 +37,6 @@ struct TerminalHandle {
 impl TerminalHandle {
     async fn start(handle: Handle, channel_id: ChannelId) -> Self {
         let (sender, mut receiver) = unbounded_channel::<Vec<u8>>();
-
-        // Spawn a task to send terminal output over SSH channel
         tokio::spawn(async move {
             while let Some(data) = receiver.recv().await {
                 let result = handle.data(channel_id, data.into()).await;
@@ -44,7 +45,6 @@ impl TerminalHandle {
                 }
             }
         });
-
         Self {
             sender,
             sink: Vec::new(),
@@ -52,7 +52,7 @@ impl TerminalHandle {
     }
 }
 
-// Implement Write trait for TerminalHandle to collect terminal output
+// The crossterm backend writes to the terminal handle.
 impl std::io::Write for TerminalHandle {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.sink.extend_from_slice(buf);
@@ -73,23 +73,9 @@ impl std::io::Write for TerminalHandle {
     }
 }
 
-// Define an Event enum to represent input events
-#[derive(Debug)]
-enum Event {
-    Input(KeyEvent),
-    Tick,
-}
-
-// Client struct holds the terminal, app, and sender for events
-struct Client {
-    terminal: SshTerminal,
-    app: app::App,
-    event_sender: UnboundedSender<Event>,
-}
-
 #[derive(Clone)]
 struct AppServer {
-    clients: Arc<Mutex<HashMap<usize, UnboundedSender<Event>>>>,
+    clients: Arc<Mutex<HashMap<usize, (SshTerminal, App)>>>,
     id: usize,
 }
 
@@ -102,11 +88,49 @@ impl AppServer {
     }
 
     pub async fn run(&mut self) -> Result<(), anyhow::Error> {
-        let config = russh::server::Config {
-            auth_rejection_time: Duration::from_secs(3),
+        let clients = self.clients.clone();
+        let theme = Theme::macchiato();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+                for (_, (terminal, app)) in clients.lock().await.iter_mut() {
+                    terminal
+                        .draw(|f| {
+                            let (main_area, bottom_bar_area) = centered_rect(f.area(), 80, 80, 3);
+
+                            let typing = TypingWidget::new(&app.message, app.scroll_position)
+                                .frame(app.current_frame)
+                                .style(theme.text)
+                                .alignment(Alignment::Left)
+                                .wrap(Some(Wrap { trim: true }));
+
+                            f.render_widget(typing, main_area);
+
+                            let key_hints = Paragraph::new(Line::from(vec![
+                                Span::styled("q / Ctrl+c", theme.highlight),
+                                Span::raw(" to quit, "),
+                                Span::styled("Up/Down or k/j", theme.highlight),
+                                Span::raw(" to scroll"),
+                            ]))
+                            .alignment(Alignment::Center)
+                            .block(Block::default());
+
+                            f.render_widget(key_hints, bottom_bar_area);
+                        })
+                        .unwrap();
+                }
+            }
+        });
+
+        let config = Config {
+            inactivity_timeout: Some(std::time::Duration::from_secs(3600)),
+            auth_rejection_time: std::time::Duration::from_secs(3),
+            auth_rejection_time_initial: Some(std::time::Duration::from_secs(0)),
             keys: vec![russh_keys::PrivateKey::random(&mut OsRng, Algorithm::Ed25519).unwrap()],
             ..Default::default()
         };
+
         self.run_on_address(Arc::new(config), ("0.0.0.0", 2222))
             .await?;
         Ok(())
@@ -115,7 +139,6 @@ impl AppServer {
 
 impl Server for AppServer {
     type Handler = Self;
-
     fn new_client(&mut self, _: Option<std::net::SocketAddr>) -> Self {
         let s = self.clone();
         self.id += 1;
@@ -124,7 +147,7 @@ impl Server for AppServer {
 }
 
 #[async_trait]
-impl russh::server::Handler for AppServer {
+impl Handler for AppServer {
     type Error = anyhow::Error;
 
     async fn channel_open_session(
@@ -133,111 +156,52 @@ impl russh::server::Handler for AppServer {
         session: &mut Session,
     ) -> Result<bool, Self::Error> {
         let terminal_handle = TerminalHandle::start(session.handle(), channel.id()).await;
+
         let backend = CrosstermBackend::new(terminal_handle);
 
-        // Create the SSH terminal
-        let terminal = Terminal::new(backend)?;
-        let mut app = app::App::new();
+        // the correct viewport area will be set when the client request a pty
+        let options = TerminalOptions {
+            viewport: Viewport::Fixed(Rect::default()),
+        };
 
-        // Create event channels
-        let (event_sender, mut event_receiver) = unbounded_channel();
+        let terminal = Terminal::with_options(backend, options)?;
+        let app = App::new();
 
-        // Store the event sender for this client
-        let client = Arc::clone(&self.clients);
-        let id = self.id;
         let mut clients = self.clients.lock().await;
-        clients.insert(self.id, event_sender.clone());
-
-        // Spawn the main loop for the client
-        tokio::spawn(async move {
-            let mut terminal = terminal;
-            let mut app = app;
-            let mut tui = tui::terminal::Terminal::new().expect("Unable to create TUi app");
-            // Create a periodic tick event
-            let tick_rate = Duration::from_millis(25);
-            let mut tick_interval = time::interval(tick_rate);
-
-            loop {
-                // Wait for either input event or tick
-                tokio::select! {
-                    _ = tick_interval.tick() => {
-                        // Send tick event
-                        if event_sender.send(Event::Tick).is_err() {
-                            break;
-                        }
-                    }
-                    Some(event) = event_receiver.recv() => {
-                        match event {
-                            Event::Input(key) => {
-                                // Handle input event
-                                if let Err(e) = app.handle_event(events::AppEvent::Key(key)) {
-                                    eprintln!("Error handling event: {:?}", e);
-                                    break;
-                                }
-                            }
-                            Event::Tick => {
-                                // Handle tick event if necessary
-                            }
-                        }
-                    }
-                }
-
-                // Draw the app
-                tui.draw(&app).expect("Unable to draw app");
-
-                // Exit if the app is no longer running
-                if !app.running {
-                    break;
-                }
-            }
-
-            // Clean up after client disconnects
-            let mut c = client.lock().await;
-            c.remove(&id);
-        });
+        clients.insert(self.id, (terminal, app));
 
         Ok(true)
     }
 
-    async fn auth_publickey(
-        &mut self,
-        _: &str,
-        _: &russh_keys::PublicKey,
-    ) -> Result<Auth, Self::Error> {
+    async fn auth_publickey(&mut self, _: &str, _: &PublicKey) -> Result<Auth, Self::Error> {
         Ok(Auth::Accept)
     }
 
-    async fn auth_password(
-        &mut self,
-        _: &str,
-        _: &str,
-    ) -> Result<russh::server::Auth, Self::Error> {
-        Ok(Auth::Accept)
-    }
-
-    // Handle data received from the SSH client
     async fn data(
         &mut self,
-        _channel: ChannelId,
+        channel: ChannelId,
         data: &[u8],
-        _session: &mut Session,
+        session: &mut Session,
     ) -> Result<(), Self::Error> {
-        let input = String::from_utf8_lossy(data);
-        let mut clients = self.clients.lock().await;
-        if let Some(sender) = clients.get_mut(&self.id) {
-            // Parse input into KeyEvent
-            for c in input.chars() {
-                let key_event = KeyCode::Char(c);
-                let event = Event::Input(key_event.into());
-                if sender.send(event).is_err() {
-                    break;
-                }
+        match data {
+            // Pressing 'q' closes the connection.
+            b"q" => {
+                self.clients.lock().await.remove(&self.id);
+                session.close(channel)?;
             }
+            // Pressing 'c' resets the counter for the app.
+            // Only the client with the id sees the counter reset.
+            b"c" => {
+                let mut clients = self.clients.lock().await;
+                let (_, app) = clients.get_mut(&self.id).unwrap();
+            }
+            _ => {}
         }
+
         Ok(())
     }
 
-    /// Handle window size change requests
+    /// The client's window size has changed.
     async fn window_change_request(
         &mut self,
         _: ChannelId,
@@ -247,15 +211,25 @@ impl russh::server::Handler for AppServer {
         _: u32,
         _: &mut Session,
     ) -> Result<(), Self::Error> {
+        let rect = Rect {
+            x: 0,
+            y: 0,
+            width: col_width as u16,
+            height: row_height as u16,
+        };
+
         let mut clients = self.clients.lock().await;
-        if let Some(sender) = clients.get_mut(&self.id) {
-            // You can handle terminal resizing here if your app supports it
-            // For example, you might send a resize event to the app
-        }
+        let (terminal, _) = clients.get_mut(&self.id).unwrap();
+        terminal.resize(rect)?;
+
         Ok(())
     }
 
-    /// Handle PTY requests
+    /// The client requests a pseudo-terminal with the given
+    /// specifications.
+    ///
+    /// **Note:** Success or failure should be communicated to the client by calling
+    /// `session.channel_success(channel)` or `session.channel_failure(channel)` respectively.
     async fn pty_request(
         &mut self,
         channel: ChannelId,
@@ -267,8 +241,31 @@ impl russh::server::Handler for AppServer {
         _: &[(Pty, u32)],
         session: &mut Session,
     ) -> Result<(), Self::Error> {
+        let rect = Rect {
+            x: 0,
+            y: 0,
+            width: col_width as u16,
+            height: row_height as u16,
+        };
+
+        let mut clients = self.clients.lock().await;
+        let (terminal, _) = clients.get_mut(&self.id).unwrap();
+        terminal.resize(rect)?;
+
         session.channel_success(channel)?;
+
         Ok(())
+    }
+}
+
+impl Drop for AppServer {
+    fn drop(&mut self) {
+        let id = self.id;
+        let clients = self.clients.clone();
+        tokio::spawn(async move {
+            let mut clients = clients.lock().await;
+            clients.remove(&id);
+        });
     }
 }
 
