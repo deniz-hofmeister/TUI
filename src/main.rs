@@ -7,9 +7,8 @@ use rand_core::OsRng;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::Rect;
 use ratatui::prelude::*;
-use ratatui::style::{Color, Style};
 use ratatui::widgets::Wrap;
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::widgets::{Block, Paragraph};
 use ratatui::{Terminal, TerminalOptions, Viewport};
 use russh::keys::ssh_key::PublicKey;
 use russh::server::*;
@@ -17,8 +16,8 @@ use russh::{Channel, ChannelId, Pty};
 use russh_keys::Algorithm;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::sync::Mutex;
+use tui::terminal::Terminal as TuiTerminal;
 
 mod app;
 mod data;
@@ -26,56 +25,11 @@ mod events;
 mod theme;
 mod tui;
 mod widgets;
-type SshTerminal = Terminal<CrosstermBackend<TerminalHandle>>;
-
-struct TerminalHandle {
-    sender: UnboundedSender<Vec<u8>>,
-    // The sink collects the data which is finally sent to sender.
-    sink: Vec<u8>,
-}
-
-impl TerminalHandle {
-    async fn start(handle: Handle, channel_id: ChannelId) -> Self {
-        let (sender, mut receiver) = unbounded_channel::<Vec<u8>>();
-        tokio::spawn(async move {
-            while let Some(data) = receiver.recv().await {
-                let result = handle.data(channel_id, data.into()).await;
-                if result.is_err() {
-                    eprintln!("Failed to send data: {:?}", result);
-                }
-            }
-        });
-        Self {
-            sender,
-            sink: Vec::new(),
-        }
-    }
-}
-
-// The crossterm backend writes to the terminal handle.
-impl std::io::Write for TerminalHandle {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.sink.extend_from_slice(buf);
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        let result = self.sender.send(self.sink.clone());
-        if result.is_err() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                result.unwrap_err(),
-            ));
-        }
-
-        self.sink.clear();
-        Ok(())
-    }
-}
+type TerminalAppDB = HashMap<usize, (Terminal<CrosstermBackend<TuiTerminal>>, App)>;
 
 #[derive(Clone)]
 struct AppServer {
-    clients: Arc<Mutex<HashMap<usize, (SshTerminal, App)>>>,
+    clients: Arc<Mutex<TerminalAppDB>>,
     id: usize,
 }
 
@@ -155,7 +109,7 @@ impl Handler for AppServer {
         channel: Channel<Msg>,
         session: &mut Session,
     ) -> Result<bool, Self::Error> {
-        let terminal_handle = TerminalHandle::start(session.handle(), channel.id()).await;
+        let terminal_handle = TuiTerminal::start(session.handle(), channel.id()).await;
 
         let backend = CrosstermBackend::new(terminal_handle);
 

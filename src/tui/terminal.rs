@@ -1,19 +1,20 @@
 use crate::theme::catppuccin::Theme;
 use crate::tui::layout::centered_rect;
-use crossterm::{
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
 use ratatui::prelude::*;
 use ratatui::widgets::Wrap;
 use ratatui::widgets::{Block, Paragraph};
+use russh::server::*;
+use russh::ChannelId;
 use std::{error::Error, io::Stderr};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
 use crate::app::App;
 use crate::widgets::typing::TypingWidget;
 
 pub struct Terminal {
     terminal: ratatui::Terminal<ratatui::backend::CrosstermBackend<Stderr>>,
+    sender: UnboundedSender<Vec<u8>>,
+    sink: Vec<u8>,
 }
 
 impl Terminal {
@@ -43,20 +44,40 @@ impl Terminal {
         })?;
         Ok(())
     }
+    pub async fn start(handle: Handle, channel_id: ChannelId) -> Self {
+        let (sender, mut receiver) = unbounded_channel::<Vec<u8>>();
+        tokio::spawn(async move {
+            while let Some(data) = receiver.recv().await {
+                let result = handle.data(channel_id, data.into()).await;
+                if result.is_err() {
+                    eprintln!("Failed to send data: {:?}", result);
+                }
+            }
+        });
 
-    pub fn new() -> Result<Self, Box<dyn Error>> {
-        enable_raw_mode()?;
-        execute!(std::io::stderr(), EnterAlternateScreen)?;
         let terminal =
-            ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(std::io::stderr()))?;
-
-        Ok(Self { terminal })
+            ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(std::io::stderr()))
+                .expect("Failed to create terminal");
+        Self {
+            terminal,
+            sender,
+            sink: Vec::new(),
+        }
     }
 }
+impl std::io::Write for Terminal {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.sink.extend_from_slice(buf);
+        Ok(buf.len())
+    }
 
-impl Drop for Terminal {
-    fn drop(&mut self) {
-        let _ = disable_raw_mode();
-        let _ = execute!(std::io::stderr(), LeaveAlternateScreen);
+    fn flush(&mut self) -> std::io::Result<()> {
+        let result = self.sender.send(self.sink.clone());
+        if let Err(err) = result {
+            return Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, err));
+        }
+
+        self.sink.clear();
+        Ok(())
     }
 }
