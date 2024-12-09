@@ -1,15 +1,13 @@
-use crate::theme::catppuccin::Theme;
-use crate::tui::layout::centered_rect;
-use ratatui::prelude::*;
-use ratatui::widgets::Wrap;
-use ratatui::widgets::{Block, Paragraph};
-use russh::server::*;
-use russh::ChannelId;
-use std::{error::Error, io::Stderr};
+use crate::{theme::catppuccin::Theme, tui::layout::centered_rect};
+use ratatui::{
+    prelude::*,
+    widgets::{Block, Paragraph, Wrap},
+};
+use russh::{server::*, ChannelId};
+use std::error::Error;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 
-use crate::app::App;
-use crate::widgets::typing::TypingWidget;
+use crate::{app::App, widgets::typing::TypingWidget};
 
 pub struct Terminal {
     sender: UnboundedSender<Vec<u8>>,
@@ -17,17 +15,28 @@ pub struct Terminal {
 }
 
 impl Terminal {
-    pub fn draw(f: &mut ratatui::Frame, app: &App) -> Result<(), Box<dyn Error>> {
+    pub fn draw(
+        f: &mut ratatui::Frame,
+        app: &App,
+    ) -> Result<(), Box<dyn Error>> {
         let theme = Theme::macchiato();
-        let (main_area, bottom_bar_area) = centered_rect(f.area(), 80, 80, 3);
+        let (main_area, bottom_bar_area) = centered_rect(f.area(), 80, 80, 2);
 
-        let typing = TypingWidget::new(&app.message, app.scroll_position)
-            .frame(app.current_frame)
-            .style(theme.text)
-            .alignment(Alignment::Left)
-            .wrap(Some(Wrap { trim: true }));
+        let msg = if app.current_frame < 75 {
+            TypingWidget::new(&app.splash, app.scroll_position, 1)
+                .frame(app.current_frame)
+                .style(theme.text)
+                .alignment(Alignment::Center)
+                .wrap(Some(Wrap { trim: true }))
+        } else {
+            TypingWidget::new(&app.message, app.scroll_position, 10)
+                .frame(app.current_frame.saturating_sub(75))
+                .style(theme.text)
+                .alignment(Alignment::Left)
+                .wrap(Some(Wrap { trim: true }))
+        };
 
-        f.render_widget(typing, main_area);
+        f.render_widget(msg, main_area);
 
         let key_hints = Paragraph::new(Line::from(vec![
             Span::styled("q / Ctrl+c", theme.highlight),
@@ -42,7 +51,10 @@ impl Terminal {
 
         Ok(())
     }
-    pub async fn start(handle: Handle, channel_id: ChannelId) -> Self {
+    pub async fn start(
+        handle: Handle,
+        channel_id: ChannelId,
+    ) -> Self {
         let (sender, mut receiver) = unbounded_channel::<Vec<u8>>();
         tokio::spawn(async move {
             while let Some(data) = receiver.recv().await {
@@ -60,7 +72,10 @@ impl Terminal {
     }
 }
 impl std::io::Write for Terminal {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    fn write(
+        &mut self,
+        buf: &[u8],
+    ) -> std::io::Result<usize> {
         self.sink.extend_from_slice(buf);
         Ok(buf.len())
     }

@@ -1,5 +1,7 @@
-use ratatui::layout::{Constraint, Layout};
-use ratatui::prelude::*;
+use ratatui::{
+    layout::{Constraint, Layout},
+    prelude::*,
+};
 
 pub fn centered_rect(
     r: Rect,
@@ -10,15 +12,15 @@ pub fn centered_rect(
     let vertical_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(3),
+            Constraint::Min(bottom_bar_height),
             Constraint::Percentage(percent_y),
-            Constraint::Min(3),
+            Constraint::Min(bottom_bar_height),
         ])
         .split(r);
 
     let bottom_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(0), Constraint::Length(bottom_bar_height)])
+        .constraints([Constraint::Min(1), Constraint::Length(bottom_bar_height)])
         .split(vertical_layout[2]);
 
     let main_area = Layout::default()

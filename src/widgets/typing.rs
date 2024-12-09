@@ -1,54 +1,76 @@
-use crate::theme::catppuccin::apply_custom_styles;
-use crate::theme::catppuccin::Theme;
+use crate::theme::catppuccin::{apply_custom_styles, Theme};
 use ratatui::{prelude::*, widgets::*};
 
 pub struct TypingWidget<'a> {
     text: &'a str,
     current_frame: usize,
     scroll_position: usize,
+    scroll_speed: usize,
     style: Style,
     alignment: Alignment,
     wrap: Option<Wrap>,
 }
 
 impl<'a> TypingWidget<'a> {
-    pub fn new(text: &'a str, scroll_position: usize) -> Self {
+    pub fn new(
+        text: &'a str,
+        scroll_position: usize,
+        scroll_speed: usize,
+    ) -> Self {
         Self {
             text,
             current_frame: 0,
             scroll_position,
+            scroll_speed,
             style: Style::default(),
             alignment: Alignment::Left,
             wrap: Some(Wrap { trim: true }),
         }
     }
 
-    pub fn style(mut self, style: Style) -> Self {
+    pub fn style(
+        mut self,
+        style: Style,
+    ) -> Self {
         self.style = style;
         self
     }
 
-    pub fn alignment(mut self, alignment: Alignment) -> Self {
+    pub fn alignment(
+        mut self,
+        alignment: Alignment,
+    ) -> Self {
         self.alignment = alignment;
         self
     }
 
-    pub fn frame(mut self, frame: usize) -> Self {
+    pub fn frame(
+        mut self,
+        frame: usize,
+    ) -> Self {
         self.current_frame = frame;
         self
     }
 
-    pub fn wrap(mut self, wrap: Option<Wrap>) -> Self {
+    pub fn wrap(
+        mut self,
+        wrap: Option<Wrap>,
+    ) -> Self {
         self.wrap = wrap;
         self
     }
 }
 
 impl Widget for TypingWidget<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(
+        self,
+        area: Rect,
+        buf: &mut Buffer,
+    ) {
         let theme = Theme::macchiato();
-        let mut visible_text =
-            tui_markdown::from_str(&self.text[..self.current_frame.min(self.text.len())]);
+        let mut visible_text = tui_markdown::from_str(
+            &self.text[..(self.current_frame * self.scroll_speed).min(self.text.len())],
+        );
         apply_custom_styles(&mut visible_text, &theme);
         Paragraph::new(visible_text)
             .style(self.style)

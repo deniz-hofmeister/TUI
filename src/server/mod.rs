@@ -1,27 +1,16 @@
-use crate::app::App;
-use crate::events::AppEvent;
-use crate::events::EventHandler;
-use crate::theme::catppuccin::Theme;
-use crate::tui::layout::centered_rect;
-use crate::tui::terminal::Terminal as TuiTerminal;
-use crate::widgets::typing::TypingWidget;
+use crate::{
+    app::App,
+    events::{AppEvent, EventHandler},
+    tui::terminal::Terminal as TuiTerminal,
+};
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use rand_core::OsRng;
-use ratatui::backend::CrosstermBackend;
-use ratatui::layout::Rect;
-use ratatui::prelude::*;
-use ratatui::widgets::Wrap;
-use ratatui::widgets::{Block, Paragraph};
-use ratatui::{Terminal, TerminalOptions, Viewport};
-use russh::keys::ssh_key::PublicKey;
-use russh::server::*;
-use russh::{Channel, ChannelId, Pty};
+use ratatui::{backend::CrosstermBackend, layout::Rect, Terminal, TerminalOptions, Viewport};
+use russh::{keys::ssh_key::PublicKey, server::*, Channel, ChannelId, Pty};
 use russh_keys::Algorithm;
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tokio::time::Duration;
+use std::{collections::HashMap, sync::Arc};
+use tokio::{sync::Mutex, time::Duration};
 type TerminalAppDB = HashMap<usize, (Terminal<CrosstermBackend<TuiTerminal>>, App)>;
 
 #[derive(Clone)]
@@ -39,25 +28,36 @@ impl AppServer {
     }
 
     pub async fn run(&mut self) -> Result<(), anyhow::Error> {
-        let clients = self.clients.clone();
+        let clients_draw = self.clients.clone();
+        tokio::spawn(async move {
+            loop {
+                for (_, (terminal, app)) in clients_draw.lock().await.iter_mut() {
+                    terminal
+                        .draw(|f| {
+                            TuiTerminal::draw(f, app).unwrap();
+                        })
+                        .expect("Failed drawing terminal");
+                }
+            }
+        });
+
+        let clients_events = self.clients.clone();
         let events = EventHandler::new(Duration::from_millis(25));
         tokio::spawn(async move {
             loop {
-                for (_, (terminal, app)) in clients.lock().await.iter_mut() {
-                    terminal.draw(|f| {
-                        TuiTerminal::draw(f, &app).unwrap();
-                    });
-
-                    if let Ok(event) = events.next() {
-                        app.handle_event(event).unwrap();
+                if let Ok(event) = events.next() {
+                    let local_event = event;
+                    for (_, (_, app)) in clients_events.lock().await.iter_mut() {
+                        app.handle_event(local_event)
+                            .expect("Failed handling event");
                     }
                 }
             }
         });
 
         let config = Config {
-            inactivity_timeout: Some(std::time::Duration::from_secs(3600)),
-            auth_rejection_time: std::time::Duration::from_secs(3),
+            inactivity_timeout: Some(std::time::Duration::from_secs(60)),
+            auth_rejection_time: std::time::Duration::from_secs(1),
             auth_rejection_time_initial: Some(std::time::Duration::from_secs(0)),
             keys: vec![russh_keys::PrivateKey::random(&mut OsRng, Algorithm::Ed25519).unwrap()],
             ..Default::default()
@@ -71,7 +71,10 @@ impl AppServer {
 
 impl Server for AppServer {
     type Handler = Self;
-    fn new_client(&mut self, _: Option<std::net::SocketAddr>) -> Self {
+    fn new_client(
+        &mut self,
+        _: Option<std::net::SocketAddr>,
+    ) -> Self {
         let s = self.clone();
         self.id += 1;
         s
@@ -104,7 +107,11 @@ impl Handler for AppServer {
         Ok(true)
     }
 
-    async fn auth_publickey(&mut self, _: &str, _: &PublicKey) -> Result<Auth, Self::Error> {
+    async fn auth_publickey(
+        &mut self,
+        _: &str,
+        _: &PublicKey,
+    ) -> Result<Auth, Self::Error> {
         Ok(Auth::Accept)
     }
 
@@ -119,6 +126,8 @@ impl Handler for AppServer {
             b"q" => AppEvent::Key(KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE)),
             b"k" => AppEvent::Key(KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE)),
             b"j" => AppEvent::Key(KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)),
+            b"\x1b[A" => AppEvent::Key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+            b"\x1b[B" => AppEvent::Key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             _ => return Ok(()),
         };
 
