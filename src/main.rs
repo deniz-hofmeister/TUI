@@ -143,6 +143,8 @@ impl russh::server::Handler for AppServer {
         let (event_sender, mut event_receiver) = unbounded_channel();
 
         // Store the event sender for this client
+        let client = Arc::clone(&self.clients);
+        let id = self.id;
         let mut clients = self.clients.lock().await;
         clients.insert(self.id, event_sender.clone());
 
@@ -150,7 +152,7 @@ impl russh::server::Handler for AppServer {
         tokio::spawn(async move {
             let mut terminal = terminal;
             let mut app = app;
-
+            let mut tui = tui::terminal::Terminal::new().expect("Unable to create TUi app");
             // Create a periodic tick event
             let tick_rate = Duration::from_millis(25);
             let mut tick_interval = time::interval(tick_rate);
@@ -168,7 +170,7 @@ impl russh::server::Handler for AppServer {
                         match event {
                             Event::Input(key) => {
                                 // Handle input event
-                                if let Err(e) = app.handle_event(events::Event::Input(key)) {
+                                if let Err(e) = app.handle_event(events::AppEvent::Key(key)) {
                                     eprintln!("Error handling event: {:?}", e);
                                     break;
                                 }
@@ -181,10 +183,7 @@ impl russh::server::Handler for AppServer {
                 }
 
                 // Draw the app
-                if let Err(e) = terminal.draw(|f| app.draw(f)) {
-                    eprintln!("Error drawing terminal: {:?}", e);
-                    break;
-                }
+                tui.draw(&app).expect("Unable to draw app");
 
                 // Exit if the app is no longer running
                 if !app.running {
@@ -193,8 +192,8 @@ impl russh::server::Handler for AppServer {
             }
 
             // Clean up after client disconnects
-            let mut clients = clients.lock().await;
-            clients.remove(&self.id);
+            let mut c = client.lock().await;
+            c.remove(&id);
         });
 
         Ok(true)
@@ -228,8 +227,8 @@ impl russh::server::Handler for AppServer {
         if let Some(sender) = clients.get_mut(&self.id) {
             // Parse input into KeyEvent
             for c in input.chars() {
-                let key_event = KeyEvent::from(c);
-                let event = Event::Input(key_event);
+                let key_event = KeyCode::Char(c);
+                let event = Event::Input(key_event.into());
                 if sender.send(event).is_err() {
                     break;
                 }
