@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use rand_core::OsRng;
 use ratatui::{backend::CrosstermBackend, layout::Rect, Terminal, TerminalOptions, Viewport};
-use russh::{keys::ssh_key::PublicKey, server::*, Channel, ChannelId, Pty};
+use russh::{keys::ssh_key::PublicKey, server::*, Channel, ChannelId, MethodSet, Pty};
 use russh_keys::Algorithm;
 use std::{collections::HashMap, sync::Arc};
 use tokio::{sync::Mutex, time::Duration};
@@ -56,6 +56,7 @@ impl AppServer {
         });
 
         let config = Config {
+            methods: MethodSet::NONE,
             inactivity_timeout: Some(std::time::Duration::from_secs(60)),
             auth_rejection_time: std::time::Duration::from_secs(1),
             auth_rejection_time_initial: Some(std::time::Duration::from_secs(0)),
