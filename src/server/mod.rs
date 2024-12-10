@@ -31,6 +31,7 @@ impl AppServer {
         let clients_draw = self.clients.clone();
         tokio::spawn(async move {
             loop {
+                tokio::time::sleep(Duration::from_millis(25)).await;
                 for (_, (terminal, app)) in clients_draw.lock().await.iter_mut() {
                     terminal
                         .draw(|f| {

@@ -31,6 +31,6 @@ impl EventHandler {
     }
 
     pub fn next(&self) -> Result<AppEvent, ()> {
-        self.rx.try_recv().map_err(|_| ())
+        self.rx.recv().map_err(|_| ())
     }
 }
