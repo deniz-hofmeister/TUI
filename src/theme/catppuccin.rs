@@ -1,5 +1,7 @@
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::Text;
+use ratatui::{
+    style::{Color, Style, Stylize},
+    text::{Span, Text},
+};
 
 pub struct Theme {
     pub text: Style,
@@ -33,7 +35,10 @@ impl Theme {
     }
 }
 
-pub fn apply_custom_styles(text: &mut Text, theme: &Theme) {
+pub fn apply_custom_styles(
+    text: &mut Text,
+    theme: &Theme,
+) {
     for line in text.lines.iter_mut() {
         if let Some(first_span) = line.spans.first() {
             if first_span.content.starts_with("# ") || first_span.content.starts_with("## ") {

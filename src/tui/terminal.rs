@@ -26,12 +26,14 @@ impl Terminal {
             TypingWidget::new(&app.splash, app.scroll_position, 1)
                 .frame(app.current_frame)
                 .style(theme.text)
+                .show_caret(app.caret_visible)
                 .alignment(Alignment::Center)
                 .wrap(Some(Wrap { trim: true }))
         } else {
             TypingWidget::new(&app.message, app.scroll_position, 10)
                 .frame(app.current_frame.saturating_sub(75))
                 .style(theme.text)
+                .show_caret(true)
                 .alignment(Alignment::Left)
                 .wrap(Some(Wrap { trim: true }))
         };

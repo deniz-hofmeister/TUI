@@ -3,7 +3,10 @@ use crate::{
     events::AppEvent,
 };
 use crossterm::event::{KeyCode, KeyModifiers};
-use std::error::Error;
+use std::{
+    error::Error,
+    time::{Duration, Instant},
+};
 
 pub struct App {
     pub running: bool,
@@ -11,7 +14,8 @@ pub struct App {
     pub(crate) message: String,
     pub(crate) current_frame: usize,
     pub(crate) scroll_position: usize,
-    pub(crate) caret_pos: (u16, u16),
+    pub(crate) last_tick: Instant,
+    pub(crate) caret_visible: bool,
 }
 
 impl App {
@@ -22,7 +26,8 @@ impl App {
             splash: SPLASH.into(),
             current_frame: 0,
             scroll_position: 0,
-            caret_pos: (0, 0),
+            caret_visible: true,
+            last_tick: Instant::now(),
         }
     }
 
@@ -32,6 +37,10 @@ impl App {
     ) -> Result<(), Box<dyn Error>> {
         match event {
             AppEvent::Tick => {
+                if self.last_tick.elapsed() >= Duration::from_millis(350) {
+                    self.caret_visible = !self.caret_visible;
+                    self.last_tick = Instant::now();
+                }
                 self.current_frame += 1;
             }
             AppEvent::Key(key) => {

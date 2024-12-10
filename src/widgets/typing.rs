@@ -9,6 +9,7 @@ pub struct TypingWidget<'a> {
     style: Style,
     alignment: Alignment,
     wrap: Option<Wrap>,
+    show_caret: bool,
 }
 
 impl<'a> TypingWidget<'a> {
@@ -25,7 +26,17 @@ impl<'a> TypingWidget<'a> {
             style: Style::default(),
             alignment: Alignment::Left,
             wrap: Some(Wrap { trim: true }),
+            show_caret: true,
         }
+    }
+
+    // Add new method to control caret visibility
+    pub fn show_caret(
+        mut self,
+        show: bool,
+    ) -> Self {
+        self.show_caret = show;
+        self
     }
 
     pub fn style(
@@ -68,11 +79,21 @@ impl Widget for TypingWidget<'_> {
         buf: &mut Buffer,
     ) {
         let theme = Theme::macchiato();
-        let mut visible_text = tui_markdown::from_str(
-            &self.text[..(self.current_frame * self.scroll_speed).min(self.text.len())],
-        );
-        apply_custom_styles(&mut visible_text, &theme);
-        Paragraph::new(visible_text)
+        let mut visible_len = (self.current_frame * self.scroll_speed).min(self.text.len());
+        if self.show_caret {
+            visible_len = visible_len.saturating_sub(2);
+        }
+        let mut visible_text = self.text[..visible_len].to_string();
+
+        // Add caret if enabled and text is not empty
+        if self.show_caret && !visible_text.is_empty() {
+            visible_text.push('█');
+        }
+
+        let mut parsed_text = tui_markdown::from_str(&visible_text);
+        apply_custom_styles(&mut parsed_text, &theme);
+
+        Paragraph::new(parsed_text)
             .style(self.style)
             .alignment(self.alignment)
             .wrap(self.wrap.unwrap_or(Wrap { trim: true }))
