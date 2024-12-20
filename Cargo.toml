@@ -5,11 +5,6 @@ edition = "2021"
 
 [dependencies]
 ratatui = "*"
-anyhow = "*"
 crossterm = "*"
-transforms = "*"
 catppuccin = "*"
 tui-markdown = "*"
-tokio = { version = "1", features = ["full"] }
-async-trait = "*"
-rand_core = "*"

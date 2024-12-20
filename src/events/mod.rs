@@ -1,7 +1,10 @@
-use crossterm::event::KeyEvent;
-use std::{sync::mpsc, time::Duration};
+use crossterm::event::{self, Event, KeyEvent};
+use std::{
+    sync::mpsc,
+    thread,
+    time::{Duration, Instant},
+};
 
-#[derive(Debug, Clone, Copy)]
 pub enum AppEvent {
     Key(KeyEvent),
     Tick,
@@ -17,12 +20,23 @@ impl EventHandler {
         let (tx, rx) = mpsc::channel();
         let event_tx = tx.clone();
 
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(tick_rate);
+        thread::spawn(move || {
+            let mut last_tick = Instant::now();
             loop {
-                interval.tick().await;
-                if event_tx.send(AppEvent::Tick).is_err() {
-                    break;
+                let timeout = tick_rate
+                    .checked_sub(last_tick.elapsed())
+                    .unwrap_or_else(|| Duration::from_secs(0));
+
+                // Poll for events
+                if event::poll(timeout).unwrap() {
+                    if let Ok(Event::Key(key)) = event::read() {
+                        let _ = event_tx.send(AppEvent::Key(key));
+                    }
+                }
+
+                if last_tick.elapsed() >= tick_rate {
+                    let _ = event_tx.send(AppEvent::Tick);
+                    last_tick = Instant::now();
                 }
             }
         });
@@ -30,7 +44,7 @@ impl EventHandler {
         Self { rx, _tx: tx }
     }
 
-    pub fn next(&self) -> Result<AppEvent, ()> {
-        self.rx.recv().map_err(|_| ())
+    pub fn next(&self) -> Result<AppEvent, Box<dyn std::error::Error>> {
+        Ok(self.rx.recv()?)
     }
 }
