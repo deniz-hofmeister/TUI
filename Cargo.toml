@@ -10,8 +10,6 @@ crossterm = "*"
 transforms = "*"
 catppuccin = "*"
 tui-markdown = "*"
-russh = "*"
-russh-keys = "*"
 tokio = { version = "1", features = ["full"] }
 async-trait = "*"
 rand_core = "*"

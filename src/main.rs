@@ -1,15 +1,24 @@
 mod app;
 mod data;
 mod events;
-mod server;
 mod theme;
 mod tui;
 mod widgets;
 
-use crate::server::AppServer;
+use std::{error::Error, time::Duration};
 
-#[tokio::main]
-async fn main() {
-    let mut server = AppServer::new();
-    server.run().await.expect("Failed running server");
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut terminal = tui::terminal::Terminal::new()?;
+    let mut app = app::App::new();
+    let events = events::EventHandler::new(Duration::from_millis(25));
+
+    while app.running {
+        terminal.draw(&app)?;
+
+        if let Ok(event) = events.next() {
+            app.handle_event(event)?;
+        }
+    }
+
+    Ok(())
 }
