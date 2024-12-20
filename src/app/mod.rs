@@ -16,6 +16,7 @@ pub struct App {
     pub(crate) scroll_position: usize,
     pub(crate) last_tick: Instant,
     pub(crate) caret_visible: bool,
+    pub(crate) finished: bool,
 }
 
 impl App {
@@ -27,6 +28,7 @@ impl App {
             current_frame: 0,
             scroll_position: 0,
             caret_visible: true,
+            finished: false,
             last_tick: Instant::now(),
         }
     }

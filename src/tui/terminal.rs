@@ -24,21 +24,25 @@ impl Terminal {
         self.terminal.draw(|f| {
             let (main_area, bottom_bar_area) = centered_rect(f.area(), 80, 80, 2);
 
-            let msg = if app.current_frame < 75 {
+            let mut msg = if app.current_frame < 70 {
                 TypingWidget::new(&app.splash, app.scroll_position, 1)
                     .frame(app.current_frame)
                     .style(theme.text)
-                    .show_caret(app.caret_visible)
+                    .show_caret(true)
                     .alignment(Alignment::Center)
                     .wrap(Some(Wrap { trim: true }))
             } else {
                 TypingWidget::new(&app.message, app.scroll_position, 10)
-                    .frame(app.current_frame.saturating_sub(75))
+                    .frame(app.current_frame.saturating_sub(70))
                     .style(theme.text)
                     .show_caret(true)
                     .alignment(Alignment::Left)
                     .wrap(Some(Wrap { trim: true }))
             };
+
+            if msg.is_finished() {
+                msg.show_caret = app.caret_visible;
+            }
 
             f.render_widget(msg, main_area);
 

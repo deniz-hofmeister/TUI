@@ -9,7 +9,7 @@ pub struct TypingWidget<'a> {
     style: Style,
     alignment: Alignment,
     wrap: Option<Wrap>,
-    show_caret: bool,
+    pub show_caret: bool,
 }
 
 impl<'a> TypingWidget<'a> {
@@ -69,6 +69,10 @@ impl<'a> TypingWidget<'a> {
     ) -> Self {
         self.wrap = wrap;
         self
+    }
+
+    pub fn is_finished(&self) -> bool {
+        (self.current_frame * self.scroll_speed).min(self.text.len()) == self.text.len()
     }
 }
 
