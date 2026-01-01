@@ -1,74 +1,110 @@
 # DENIZ HOFMEISTER
 
-**Senior Robotics Engineer**
+**Freelance Robotics Engineer**
 
 ---
 
 ## Contact
 
-- **LinkedIn:** [linkedin.com/in/deniz-hofmeister](https://www.linkedin.com/in/deniz-hofmeister)
+- **Location:** The Hague, Netherlands
+- **Email:** deniz.hofmeister@gmail.com
+- **LinkedIn:** [linkedin.com/in/denizhofmeister](https://www.linkedin.com/in/denizhofmeister)
 - **GitHub:** [github.com/deniz-hofmeister](https://github.com/deniz-hofmeister)
 
 ---
 
 ## Professional Summary
 
-An enthusiastic and versatile engineer with a passion for robotics and control systems. I have a broad understanding of engineering and business, and I thrive in team environments where I can lead and collaborate to achieve objectives. My expertise spans across system refactoring, control systems and CI/CD.
+My first robot, a drone, self destructed. It also made a deep cut in my hand and started to go full lawn-mower before it shattered into pieces. It was glorious. This was my first dip into robotics and I've been interested ever since.
+
+---
+
+## Featured Project
+
+**Transforms** - [github.com/deniz-hofmeister/transforms](https://github.com/deniz-hofmeister/transforms)
+Pure Rust library for coordinate frame transformations in robotics and computer vision.
+- Middleware-independent (no ROS2/DDS dependencies)
+- `no_std` compatible for embedded systems
+- Memory safe with `#![forbid(unsafe_code)]`
+- O(log n) lookups, SLERP interpolation, automatic frame chaining
+
+---
+
+## Skills
+
+- Rust
+- Embedded Systems
+- Control Systems
+- Computer Vision
+- CI/CD
 
 ---
 
 ## Education
 
-**MSc. Electrical Engineering**  
-*TU Delft, 2017-2019*  
+**MSc. Electrical Engineering**
+*Delft University of Technology, 2017-2019*
 Specialized in DSP and Control Systems. Thesis on neural network-based control.
+
+**BSc. Civil Engineering**
+*Delft University of Technology, 2010-2015*
 
 ---
 
 ## Work Experience
 
-**Senior Robotics Engineer**  
-*Ranmarine B.V., 2021-Today*  
-- Led system refactor from ROS1 to ROS2.
-- Developed a gazebo simulator and dockerized the codebase.
-- Implemented CI/CD with TeamCity.
-- Supervised MHE and NMPC control development.
-- Created custom CUDA kernels for pointcloud processing.
-- Designed a PCB in Altium for high-power LED control.
+**Founder**
+*Hofmeister Robotics, April 2025 - Present*
+The Hague, Netherlands
 
-**Computer Vision / AI Engineer**  
-*Invisible Foods B.V., 2022-2023*  
-- Designed and deployed a computer vision model for quality assessment.
-- Built a training database and trained a ViT-model for image classification.
-- Developed cloud infrastructure for live inference.
+**Senior Robotics Engineer**
+*RanMarine Technology, July 2023 - March 2025*
+Rotterdam
+- Led system refactor from ROS1 to ROS2, dockerized codebase
+- Developed Gazebo simulator, implemented CI/CD with TeamCity
+- Supervised MHE and NMPC control development
+- Created custom CUDA kernels for pointcloud processing
 
-**Control Engineer**  
-*Shipborn B.V., 2019-2021*  
-- Developed an autonomous docking system for boats.
-- Created a C++ PI Controller for rocket roll stabilization at Delft Aerospace Rocket Engineering.
+**Lead AI Engineer**
+*Invisible Foods, April 2023 - June 2023*
+
+**Computer Vision Engineer**
+*Invisible Foods, October 2022 - March 2023*
+Barendrecht, Netherlands
+- Designed and deployed ViT-model for quality assessment
+- Built training database and cloud infrastructure for live inference
+
+**Robotics Engineer**
+*RanMarine Technology, April 2021 - March 2023*
+Rotterdam, Netherlands
+
+**Co-Founder**
+*GHR Marine Systems, September 2020 - December 2020*
+The Hague, Netherlands
+
+**Control Engineer**
+*Shipborn B.V., February 2019 - January 2021*
+Nieuwegein, Netherlands
+Controller design and programming of an autonomous self-parking sailing yacht using BEM for state-space description. Implementation through ROS2 using C++, CUDA and Python.
+
+**Control Engineer**
+*Delft Aerospace Rocket Engineering, March 2016 - July 2017*
+Delft, Netherlands
+- Advanced Control Team: Controller design and MATLAB simulations for rocket stabilization
+- Project Aether: Control algorithm implementation in a supersonic rocket
 
 ---
 
 ## Projects
 
-- **Drone Management Platform:** Embedded Rust, Yocto-Linux, SQL, SvelteKit.
-- **GHR Marine Systems:** Autonomous docking system for boats.
+- **Drone Management Platform:** Embedded Rust, Yocto-Linux, SQL, SvelteKit
 
 ---
 
 ## Languages
 
-- **English, Dutch:** Native
-- **German:** Conversational
-- **Spanish, French, Indonesian:** Basic
+- **Dutch, English:** Native
+- **Indonesian, German:** Elementary
 
 ---
-
-## Additional Experience
-
-- Supervised interns and led university projects.
-- Worked as a teaching assistant at TU Delft, focusing on signal processing and instrumentation.
-
----
-
 
